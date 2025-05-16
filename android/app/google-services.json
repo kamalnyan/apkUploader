@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "867154099751",
+    "project_id": "apk-uploader-8feb8",
+    "storage_bucket": "apk-uploader-8feb8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867154099751:android:a17b56c068cc75d2131802",
+        "android_client_info": {
+          "package_name": "com.example.apkuploader"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4JJc7LdDQLrfv98r8oBMflPRWIZ63O1I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
