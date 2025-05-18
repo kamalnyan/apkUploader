@@ -16,10 +16,10 @@ import '../../widgets/apk_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
 import '../user/user_home_screen.dart';
-import '../editor/apk_upload_screen.dart';
 import '../editor/apk_edit_screen.dart';
 import 'user_management_screen.dart';
 import 'profile_screen.dart';
+import 'enhanced_upload_form.dart';
 
 /// Admin home screen with APK management
 class AdminHomeScreen extends StatefulWidget {
@@ -63,11 +63,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
     super.dispose();
   }
 
-  /// Navigate to APK upload screen
+  /// Navigate to Enhanced APK upload screen
   void _navigateToUpload() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const APKUploadScreen(),
+        builder: (context) => const EnhancedUploadForm(),
       ),
     );
   }
@@ -332,17 +332,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> with SingleTickerProv
           ],
         ),
         
-        // Floating action button for adding new APKs
+        // Floating action button for upload
         floatingActionButton: FloatingActionButton(
           onPressed: _navigateToUpload,
+          backgroundColor: Colors.green,
+          tooltip: 'Upload New APK',
           child: const Icon(Icons.add),
-        )
-        .animate(controller: _animationController)
-        .scaleXY(
-          begin: 0, 
-          end: 1,
-          duration: AppTheme.mediumAnimationDuration,
-        ),
+        ).animate(controller: _animationController)
+          .scaleXY(
+            begin: 0, 
+            end: 1,
+            duration: AppTheme.mediumAnimationDuration,
+          ),
         
         // Main content
         body: Consumer<APKProvider>(

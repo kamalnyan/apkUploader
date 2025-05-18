@@ -10,6 +10,10 @@ class FirebaseAPK {
   final int minSdk;
   final int targetSdk;
   final String? description;
+  final String? developer;
+  final String? minRequirements;
+  final String? playStoreUrl;
+  final List<String> permissions;
   final String apkUrl;
   final String? iconUrl;
   final List<String> screenshots;
@@ -20,6 +24,16 @@ class FirebaseAPK {
   final String? updatedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Additional fields
+  final String? category;
+  final String? releaseDate;
+  final String? languages;
+  final String? installInstructions;
+  final String? changelog;
+  final String? supportEmail;
+  final String? privacyPolicyUrl;
+  final bool isRestricted;
+  final String? downloadPassword;
 
   /// Constructor
   FirebaseAPK({
@@ -31,6 +45,10 @@ class FirebaseAPK {
     required this.minSdk,
     required this.targetSdk,
     this.description,
+    this.developer,
+    this.minRequirements,
+    this.playStoreUrl,
+    this.permissions = const [],
     required this.apkUrl,
     this.iconUrl,
     required this.screenshots,
@@ -41,6 +59,16 @@ class FirebaseAPK {
     this.updatedBy,
     required this.createdAt,
     required this.updatedAt,
+    // Additional fields
+    this.category,
+    this.releaseDate,
+    this.languages,
+    this.installInstructions,
+    this.changelog,
+    this.supportEmail,
+    this.privacyPolicyUrl,
+    this.isRestricted = false,
+    this.downloadPassword,
   });
 
   /// Create from Firestore map
@@ -54,6 +82,10 @@ class FirebaseAPK {
       minSdk: _parseIntSafely(map['min_sdk']),
       targetSdk: _parseIntSafely(map['target_sdk']),
       description: map['description'],
+      developer: map['developer'],
+      minRequirements: map['min_requirements'],
+      playStoreUrl: map['play_store_url'],
+      permissions: List<String>.from(map['permissions'] ?? []),
       apkUrl: map['apk_url'] ?? '',
       iconUrl: map['icon_url'],
       screenshots: List<String>.from(map['screenshots'] ?? []),
@@ -64,6 +96,16 @@ class FirebaseAPK {
       updatedBy: map['updated_by'],
       createdAt: _parseTimestamp(map['created_at']),
       updatedAt: _parseTimestamp(map['updated_at']),
+      // Additional fields
+      category: map['category'],
+      releaseDate: map['release_date'],
+      languages: map['languages'],
+      installInstructions: map['install_instructions'],
+      changelog: map['changelog'],
+      supportEmail: map['support_email'],
+      privacyPolicyUrl: map['privacy_policy_url'],
+      isRestricted: map['is_restricted'] ?? false,
+      downloadPassword: map['download_password'],
     );
   }
 
@@ -77,6 +119,10 @@ class FirebaseAPK {
       'min_sdk': minSdk,
       'target_sdk': targetSdk,
       'description': description,
+      'developer': developer,
+      'min_requirements': minRequirements,
+      'play_store_url': playStoreUrl,
+      'permissions': permissions,
       'apk_url': apkUrl,
       'icon_url': iconUrl,
       'screenshots': screenshots,
@@ -87,6 +133,16 @@ class FirebaseAPK {
       'updated_by': updatedBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      // Additional fields
+      'category': category,
+      'release_date': releaseDate,
+      'languages': languages,
+      'install_instructions': installInstructions,
+      'changelog': changelog,
+      'support_email': supportEmail,
+      'privacy_policy_url': privacyPolicyUrl, 
+      'is_restricted': isRestricted,
+      'download_password': downloadPassword,
     };
   }
 
@@ -100,6 +156,10 @@ class FirebaseAPK {
     int? minSdk,
     int? targetSdk,
     String? description,
+    String? developer,
+    String? minRequirements,
+    String? playStoreUrl,
+    List<String>? permissions,
     String? apkUrl,
     String? iconUrl,
     List<String>? screenshots,
@@ -110,6 +170,16 @@ class FirebaseAPK {
     String? updatedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    // Additional fields
+    String? category,
+    String? releaseDate,
+    String? languages,
+    String? installInstructions,
+    String? changelog,
+    String? supportEmail,
+    String? privacyPolicyUrl,
+    bool? isRestricted,
+    String? downloadPassword,
   }) {
     return FirebaseAPK(
       id: id ?? this.id,
@@ -120,6 +190,10 @@ class FirebaseAPK {
       minSdk: minSdk ?? this.minSdk,
       targetSdk: targetSdk ?? this.targetSdk,
       description: description ?? this.description,
+      developer: developer ?? this.developer,
+      minRequirements: minRequirements ?? this.minRequirements,
+      playStoreUrl: playStoreUrl ?? this.playStoreUrl,
+      permissions: permissions ?? this.permissions,
       apkUrl: apkUrl ?? this.apkUrl,
       iconUrl: iconUrl ?? this.iconUrl,
       screenshots: screenshots ?? this.screenshots,
@@ -130,6 +204,16 @@ class FirebaseAPK {
       updatedBy: updatedBy ?? this.updatedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      // Additional fields
+      category: category ?? this.category,
+      releaseDate: releaseDate ?? this.releaseDate,
+      languages: languages ?? this.languages,
+      installInstructions: installInstructions ?? this.installInstructions,
+      changelog: changelog ?? this.changelog,
+      supportEmail: supportEmail ?? this.supportEmail,
+      privacyPolicyUrl: privacyPolicyUrl ?? this.privacyPolicyUrl,
+      isRestricted: isRestricted ?? this.isRestricted,
+      downloadPassword: downloadPassword ?? this.downloadPassword,
     );
   }
 }

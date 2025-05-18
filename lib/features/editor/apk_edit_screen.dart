@@ -31,12 +31,25 @@ class APKEditScreen extends StatefulWidget {
 
 class _APKEditScreenState extends State<APKEditScreen> {
   final _formKey = GlobalKey<FormState>();
+  // Basic information
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _versionController = TextEditingController();
+  final _developerController = TextEditingController();
   final _changelogController = TextEditingController();
+  final _playStoreUrlController = TextEditingController();
+  
+  // Additional details
+  final _categoryController = TextEditingController();
+  final _releaseDateController = TextEditingController();
+  final _languagesController = TextEditingController();
+  final _installInstructionsController = TextEditingController();
+  final _supportEmailController = TextEditingController();
+  final _privacyPolicyController = TextEditingController();
+  final _downloadPasswordController = TextEditingController();
   
   late bool _isPinned;
+  late bool _isRestricted;
   File? _imageFile;
   bool _isLoading = false;
   String? _errorMessage;
@@ -49,20 +62,48 @@ class _APKEditScreenState extends State<APKEditScreen> {
 
   @override
   void dispose() {
+    // Basic info
     _nameController.dispose();
     _descriptionController.dispose();
     _versionController.dispose();
+    _developerController.dispose();
     _changelogController.dispose();
+    _playStoreUrlController.dispose();
+    
+    // Additional details
+    _categoryController.dispose();
+    _releaseDateController.dispose();
+    _languagesController.dispose();
+    _installInstructionsController.dispose();
+    _supportEmailController.dispose();
+    _privacyPolicyController.dispose();
+    _downloadPasswordController.dispose();
+    
     super.dispose();
   }
 
   /// Initialize form values from the APK
   void _initFormValues() {
+    // Basic info
     _nameController.text = widget.apk.name;
-    _descriptionController.text = widget.apk.description ?? '';
-    _versionController.text = widget.apk.version ?? '';
+    _descriptionController.text = widget.apk.description;
+    _versionController.text = widget.apk.versionName;
+    _developerController.text = widget.apk.developer ?? '';
     _changelogController.text = widget.apk.changelog ?? '';
+    _playStoreUrlController.text = widget.apk.playStoreUrl ?? '';
+    
+    // Additional details
+    _categoryController.text = widget.apk.toMap()['category'] ?? '';
+    _releaseDateController.text = widget.apk.toMap()['release_date'] ?? '';
+    _languagesController.text = widget.apk.toMap()['languages'] ?? '';
+    _installInstructionsController.text = widget.apk.toMap()['install_instructions'] ?? '';
+    _supportEmailController.text = widget.apk.toMap()['support_email'] ?? '';
+    _privacyPolicyController.text = widget.apk.toMap()['privacy_policy_url'] ?? '';
+    _downloadPasswordController.text = widget.apk.toMap()['download_password'] ?? '';
+    
+    // Control values
     _isPinned = widget.apk.isPinned;
+    _isRestricted = widget.apk.toMap()['is_restricted'] ?? false;
   }
 
   /// Pick an image from gallery
@@ -107,7 +148,18 @@ class _APKEditScreenState extends State<APKEditScreen> {
       final name = _nameController.text.trim();
       final description = _descriptionController.text.trim();
       final version = _versionController.text.trim();
+      final developer = _developerController.text.trim();
       final changelog = _changelogController.text.trim();
+      final playStoreUrl = _playStoreUrlController.text.trim();
+      
+      // Additional details
+      final category = _categoryController.text.trim();
+      final releaseDate = _releaseDateController.text.trim();
+      final languages = _languagesController.text.trim();
+      final installInstructions = _installInstructionsController.text.trim();
+      final supportEmail = _supportEmailController.text.trim();
+      final privacyPolicyUrl = _privacyPolicyController.text.trim();
+      final downloadPassword = _isRestricted ? _downloadPasswordController.text.trim() : null;
 
       // Update APK in Firebase
       final success = await context.read<APKProvider>().updateAPK(
@@ -119,10 +171,24 @@ class _APKEditScreenState extends State<APKEditScreen> {
         minSdk: widget.apk.minSdk,
         targetSdk: widget.apk.targetSdk,
         description: description,
+        developer: developer,
+        playStoreUrl: playStoreUrl,
         iconFile: _imageFile,
         iconFileName: _imageFile != null ? '${name.replaceAll(' ', '_')}_icon.png' : null,
         sizeBytes: widget.apk.sizeBytes,
         screenshotsToKeep: widget.apk.screenshots,
+        permissions: widget.apk.permissions,
+        isPinned: _isPinned,
+        // Additional fields
+        category: category,
+        releaseDate: releaseDate,
+        languages: languages,
+        installInstructions: installInstructions,
+        changelog: changelog,
+        supportEmail: supportEmail,
+        privacyPolicyUrl: privacyPolicyUrl,
+        isRestricted: _isRestricted,
+        downloadPassword: downloadPassword,
       );
 
       if (!mounted) return;
@@ -265,105 +331,307 @@ class _APKEditScreenState extends State<APKEditScreen> {
                       const SizedBox(height: AppTheme.spacingLarge),
                     ],
                     
-                    // Name field
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Name *',
-                        hintText: 'Enter APK name',
+                    // Basic Information Section
+                    Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: AppTheme.spacingLarge),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Basic Information', style: Theme.of(context).textTheme.titleLarge),
+                            const Divider(),
+                            
+                            // Name field
+                            TextFormField(
+                              controller: _nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Name *',
+                                hintText: 'Enter APK name',
+                                prefixIcon: Icon(Icons.app_shortcut),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter a name';
+                                }
+                                return null;
+                              },
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Version field
+                            TextFormField(
+                              controller: _versionController,
+                              decoration: const InputDecoration(
+                                labelText: 'Version *',
+                                hintText: 'E.g., 1.0.0',
+                                prefixIcon: Icon(Icons.verified),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter a version';
+                                }
+                                return null;
+                              },
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Description field
+                            TextFormField(
+                              controller: _descriptionController,
+                              decoration: const InputDecoration(
+                                labelText: 'Description *',
+                                hintText: 'Enter APK description',
+                                prefixIcon: Icon(Icons.description),
+                                alignLabelWithHint: true,
+                              ),
+                              maxLines: 3,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter a description';
+                                }
+                                return null;
+                              },
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Developer
+                            TextFormField(
+                              controller: _developerController,
+                              decoration: const InputDecoration(
+                                labelText: 'Developer',
+                                hintText: 'Enter developer name',
+                                prefixIcon: Icon(Icons.person),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Play Store URL
+                            TextFormField(
+                              controller: _playStoreUrlController,
+                              decoration: const InputDecoration(
+                                labelText: 'Play Store URL',
+                                hintText: 'https://play.google.com/store/apps/details?id=...',
+                                prefixIcon: Icon(Icons.play_arrow),
+                              ),
+                              keyboardType: TextInputType.url,
+                            ),
+                          ],
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a name';
-                        }
-                        return null;
-                      },
                     ),
                     
-                    const SizedBox(height: AppTheme.spacingLarge),
-                    
-                    // Description field
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'Enter APK description',
+                    // Additional Details Section
+                    Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: AppTheme.spacingLarge),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Additional Details', style: Theme.of(context).textTheme.titleLarge),
+                            const Divider(),
+                            
+                            // Category
+                            TextFormField(
+                              controller: _categoryController,
+                              decoration: const InputDecoration(
+                                labelText: 'Category',
+                                hintText: 'e.g., Productivity, Games, Education',
+                                prefixIcon: Icon(Icons.category),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Release Date
+                            TextFormField(
+                              controller: _releaseDateController,
+                              decoration: const InputDecoration(
+                                labelText: 'Release Date',
+                                hintText: 'YYYY-MM-DD',
+                                prefixIcon: Icon(Icons.calendar_today),
+                              ),
+                              onTap: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (date != null) {
+                                  _releaseDateController.text = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+                                }
+                              },
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Languages
+                            TextFormField(
+                              controller: _languagesController,
+                              decoration: const InputDecoration(
+                                labelText: 'Languages Supported',
+                                hintText: 'e.g., English, Spanish, French',
+                                prefixIcon: Icon(Icons.language),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Installation Instructions
+                            TextFormField(
+                              controller: _installInstructionsController,
+                              decoration: const InputDecoration(
+                                labelText: 'Installation Instructions',
+                                hintText: 'Enter special installation instructions if any',
+                                prefixIcon: Icon(Icons.install_mobile),
+                                alignLabelWithHint: true,
+                              ),
+                              maxLines: 2,
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Changelog field
+                            TextFormField(
+                              controller: _changelogController,
+                              decoration: const InputDecoration(
+                                labelText: 'Changelog / What\'s New',
+                                hintText: 'Enter changes in this version',
+                                prefixIcon: Icon(Icons.new_releases),
+                                alignLabelWithHint: true,
+                              ),
+                              maxLines: 3,
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Support Email
+                            TextFormField(
+                              controller: _supportEmailController,
+                              decoration: const InputDecoration(
+                                labelText: 'Support Email',
+                                hintText: 'e.g., support@example.com',
+                                prefixIcon: Icon(Icons.email),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            
+                            const SizedBox(height: AppTheme.spacingMedium),
+                            
+                            // Privacy Policy URL
+                            TextFormField(
+                              controller: _privacyPolicyController,
+                              decoration: const InputDecoration(
+                                labelText: 'Privacy Policy URL',
+                                hintText: 'Enter privacy policy link if available',
+                                prefixIcon: Icon(Icons.policy),
+                              ),
+                              keyboardType: TextInputType.url,
+                            ),
+                          ],
+                        ),
                       ),
-                      maxLines: 3,
                     ),
                     
-                    const SizedBox(height: AppTheme.spacingLarge),
-                    
-                    // Version field
-                    TextFormField(
-                      controller: _versionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Version',
-                        hintText: 'E.g., 1.0.0',
+                    // Access Control Section
+                    Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: AppTheme.spacingLarge),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTheme.spacingMedium),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Access Control', style: Theme.of(context).textTheme.titleLarge),
+                            const Divider(),
+                            
+                            // Pin option
+                            SwitchListTile(
+                              title: Row(
+                                children: [
+                                  Icon(
+                                    Icons.push_pin,
+                                    color: _isPinned
+                                        ? AppTheme.primaryColor
+                                        : Colors.grey,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: AppTheme.spacingSmall),
+                                  const Text('Pin this APK'),
+                                ],
+                              ),
+                              subtitle: const Text(
+                                'Pinned APKs appear at the top of the list',
+                              ),
+                              value: _isPinned,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isPinned = value;
+                                });
+                              },
+                              activeColor: AppTheme.primaryColor,
+                            ),
+                            
+                            // Restrict access toggle
+                            SwitchListTile(
+                              title: Row(
+                                children: [
+                                  Icon(
+                                    Icons.security,
+                                    color: _isRestricted ? Colors.green : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text('Restrict Access'),
+                                ],
+                              ),
+                              subtitle: const Text('Limit who can download this APK'),
+                              value: _isRestricted,
+                              activeColor: Colors.green,
+                              onChanged: (value) {
+                                setState(() => _isRestricted = value);
+                              },
+                            ),
+                            
+                            // Download Password
+                            TextFormField(
+                              controller: _downloadPasswordController,
+                              decoration: const InputDecoration(
+                                labelText: 'Download Password',
+                                hintText: 'Set password to protect downloads',
+                                prefixIcon: Icon(Icons.password),
+                              ),
+                              obscureText: true,
+                              enabled: _isRestricted,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    
-                    const SizedBox(height: AppTheme.spacingLarge),
-                    
-                    // Changelog field
-                    TextFormField(
-                      controller: _changelogController,
-                      decoration: const InputDecoration(
-                        labelText: 'Changelog',
-                        hintText: 'Enter changes in this version',
-                      ),
-                      maxLines: 5,
-                    ),
-                    
-                    const SizedBox(height: AppTheme.spacingLarge),
-                    
-                    // Pin option
-                    SwitchListTile(
-                      title: Row(
-                        children: [
-                          Icon(
-                            Icons.push_pin,
-                            color: _isPinned
-                                ? AppTheme.primaryColor
-                                : Colors.grey,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppTheme.spacingSmall),
-                          const Text('Pin this APK'),
-                        ],
-                      ),
-                      subtitle: const Text(
-                        'Pinned APKs appear at the top of the list',
-                      ),
-                      value: _isPinned,
-                      onChanged: (value) {
-                        setState(() {
-                          _isPinned = value;
-                        });
-                      },
-                      activeColor: AppTheme.primaryColor,
-                    ),
-                    
-                    const SizedBox(height: AppTheme.spacingXl),
                     
                     // Save button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text('SAVE CHANGES'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: _isLoading ? null : _updateAPK,
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Save Changes'),
                       ),
                     ),
+                    
+                    const SizedBox(height: AppTheme.spacingXl),
                   ],
                 ),
               ),

@@ -185,7 +185,7 @@ class _ViewerHomeScreenState extends State<ViewerHomeScreen> with SingleTickerPr
           fileName: apk.name,
           progress: 0,
           status: DownloadStatus.downloading,
-          message: 'Starting download...',
+          message: 'Starting installing...',
         ),
       );
 

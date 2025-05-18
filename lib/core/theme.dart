@@ -7,7 +7,7 @@ class AppTheme {
   AppTheme._();
 
   // App colors
-  static const Color primaryColor = Color(0xFF2563EB); // Updated more modern blue
+  static const Color primaryColor = Color(0xFF2563EB);
   static const Color secondaryColor = Color(0xFF4F46E5);
   static const Color accentColor = Color(0xFF0EA5E9);
   static const Color backgroundColor = Color(0xFFF9FAFB);
@@ -849,6 +849,4 @@ class AppTheme {
       ),
     );
   }
-
-  // Similar methods for dangerButton, iconButton, etc.
 } 

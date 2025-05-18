@@ -26,6 +26,7 @@ class APKProvider extends ChangeNotifier {
   FirebaseAPK? get selectedApk => _selectedApk;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get hasActiveUploads => _firebaseService.hasActiveUploads;
 
   /// Initialize the provider and set up streams
   void init() {
@@ -67,6 +68,12 @@ class APKProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cancel all active uploads
+  Future<void> cancelUploads() async {
+    await _firebaseService.cancelUploads();
+    _setLoading(false);
+  }
+
   /// Add a new APK
   Future<bool> addAPK({
     required String name,
@@ -76,6 +83,10 @@ class APKProvider extends ChangeNotifier {
     required int minSdk,
     required int targetSdk,
     required String description,
+    String? developer,
+    String? minRequirements,
+    String? playStoreUrl,
+    List<String>? permissions,
     required File apkFile,
     required File? iconFile,
     required String apkFileName,
@@ -83,6 +94,18 @@ class APKProvider extends ChangeNotifier {
     List<File>? screenshotFiles,
     List<String>? screenshotFileNames,
     required int sizeBytes,
+    bool isPinned = false,
+    // Additional fields
+    String? category,
+    String? releaseDate,
+    String? languages,
+    String? installInstructions,
+    String? changelog,
+    String? supportEmail,
+    String? privacyPolicyUrl,
+    bool isRestricted = false,
+    String? downloadPassword,
+    Function(double)? onProgress,
   }) async {
     try {
       _setLoading(true);
@@ -93,6 +116,9 @@ class APKProvider extends ChangeNotifier {
       final apkUrl = await _firebaseService.uploadAPK(
         apkFile, 
         apkFileName,
+        onProgress: onProgress != null 
+          ? (progress) => onProgress(progress.toDouble()) 
+          : null,
       );
       
       // Upload icon file to Firebase Storage if provided
@@ -101,6 +127,9 @@ class APKProvider extends ChangeNotifier {
         iconUrl = await _firebaseService.uploadIcon(
           iconFile, 
           iconFileName,
+          onProgress: onProgress != null 
+            ? (progress) => onProgress(progress.toDouble()) 
+            : null,
         );
       }
       
@@ -110,12 +139,15 @@ class APKProvider extends ChangeNotifier {
         screenshotUrls = await _firebaseService.uploadScreenshots(
           screenshotFiles, 
           screenshotFileNames,
+          onProgress: onProgress != null 
+            ? (progress) => onProgress(progress.toDouble()) 
+            : null,
         );
       }
       
       final now = DateTime.now();
       
-      // Create a new APK model
+      // Create a new APK model with all the extracted metadata
       final newApk = FirebaseAPK(
         id: '', // Will be set by Firestore
         name: name,
@@ -125,16 +157,30 @@ class APKProvider extends ChangeNotifier {
         minSdk: minSdk,
         targetSdk: targetSdk,
         description: description,
+        developer: developer,
+        minRequirements: minRequirements,
+        playStoreUrl: playStoreUrl,
+        permissions: permissions ?? [],
         apkUrl: apkUrl,
         iconUrl: iconUrl,
         screenshots: screenshotUrls,
         sizeBytes: sizeBytes,
-        isPinned: false,
+        isPinned: isPinned,
         downloads: 0,
         createdBy: userId,
         updatedBy: userId,
         createdAt: now,
         updatedAt: now,
+        // Additional fields
+        category: category,
+        releaseDate: releaseDate,
+        languages: languages,
+        installInstructions: installInstructions,
+        changelog: changelog,
+        supportEmail: supportEmail,
+        privacyPolicyUrl: privacyPolicyUrl,
+        isRestricted: isRestricted,
+        downloadPassword: downloadPassword,
       );
       
       // Add to Firebase
@@ -163,6 +209,10 @@ class APKProvider extends ChangeNotifier {
     required int minSdk,
     required int targetSdk,
     required String description,
+    String? developer,
+    String? minRequirements,
+    String? playStoreUrl,
+    List<String>? permissions,
     File? apkFile,
     File? iconFile,
     String? apkFileName,
@@ -171,6 +221,17 @@ class APKProvider extends ChangeNotifier {
     List<String>? newScreenshotFileNames,
     List<String>? screenshotsToKeep,
     required int sizeBytes,
+    bool? isPinned,
+    // Additional fields
+    String? category,
+    String? releaseDate,
+    String? languages,
+    String? installInstructions,
+    String? changelog,
+    String? supportEmail,
+    String? privacyPolicyUrl,
+    bool? isRestricted,
+    String? downloadPassword,
   }) async {
     try {
       _setLoading(true);
@@ -250,12 +311,27 @@ class APKProvider extends ChangeNotifier {
         minSdk: minSdk,
         targetSdk: targetSdk,
         description: description,
+        developer: developer ?? existingApk.developer,
+        minRequirements: minRequirements ?? existingApk.minRequirements,
+        playStoreUrl: playStoreUrl ?? existingApk.playStoreUrl,
+        permissions: permissions ?? existingApk.permissions,
         apkUrl: apkUrl,
         iconUrl: iconUrl,
         screenshots: updatedScreenshots,
         sizeBytes: sizeBytes,
+        isPinned: isPinned,
         updatedBy: userId,
         updatedAt: DateTime.now(),
+        // Additional fields
+        category: category,
+        releaseDate: releaseDate,
+        languages: languages,
+        installInstructions: installInstructions,
+        changelog: changelog,
+        supportEmail: supportEmail,
+        privacyPolicyUrl: privacyPolicyUrl,
+        isRestricted: isRestricted,
+        downloadPassword: downloadPassword,
       );
       
       // Update in Firebase
@@ -277,12 +353,37 @@ class APKProvider extends ChangeNotifier {
   /// Toggle pin status
   Future<bool> togglePinStatus(String id, bool isPinned) async {
     try {
+      _setLoading(true);
+      
+      // Get existing APK first
+      final existingApk = await _firebaseService.getApkById(id);
+      
+      if (existingApk == null) {
+        _setErrorMessage('APK not found.');
+        _setLoading(false);
+        return false;
+      }
+      
+      // Update pin status in Firestore
       await _firebaseService.togglePinStatus(id, isPinned);
+      
+      // Update local copy and notify listeners
+      final index = _apks.indexWhere((apk) => apk.id == id);
+      if (index != -1) {
+        _apks[index] = _apks[index].copyWith(isPinned: isPinned);
+        _filterPinnedApks(); // Re-filter pinned/unpinned lists
+      }
+      
+      // Refresh the list to ensure consistency
       await _loadApks();
+      _setLoading(false);
+      
+      // Return success
       return true;
     } catch (e) {
       logger.e('Error toggling pin status: $e');
       _setErrorMessage('Failed to update pin status. Please try again.');
+      _setLoading(false);
       return false;
     }
   }
@@ -389,10 +490,16 @@ class APKProvider extends ChangeNotifier {
     required String version,
     required String? changelog,
     required String description,
+    String? developer,
+    String? minRequirements,
+    String? playStoreUrl,
+    List<String>? permissions,
     required File apkFile,
     required File? iconFile,
     required int sizeBytes,
+    bool isPinned = false,
     List<File>? screenshotFiles,
+    Function(double)? onProgress,
   }) async {
     final apkFileName = '${name.replaceAll(' ', '_')}_v${version}.apk';
     final iconFileName = iconFile != null ? '${name.replaceAll(' ', '_')}_icon.png' : null;
@@ -428,6 +535,10 @@ class APKProvider extends ChangeNotifier {
       minSdk: 21, // Android 5.0
       targetSdk: 33, // Android 13
       description: description,
+      developer: developer,
+      minRequirements: minRequirements,
+      playStoreUrl: playStoreUrl,
+      permissions: permissions,
       apkFile: apkFile,
       iconFile: iconFile,
       apkFileName: apkFileName,
@@ -435,6 +546,8 @@ class APKProvider extends ChangeNotifier {
       screenshotFiles: screenshotFiles,
       screenshotFileNames: screenshotFileNames,
       sizeBytes: sizeBytes,
+      isPinned: isPinned,
+      onProgress: onProgress,
     );
   }
 }

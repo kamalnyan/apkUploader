@@ -6,9 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'storage_permission_handler.dart';
 
 /// Logger instance for application-wide logging
 final logger = Logger(
@@ -18,7 +18,7 @@ final logger = Logger(
     lineLength: 120,
     colors: true,
     printEmojis: true,
-    printTime: true,
+    dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
   ),
 );
 
@@ -184,218 +184,8 @@ class AppHelpers {
 
   /// Check and request storage permission
   static Future<bool> checkAndRequestStoragePermission(BuildContext context) async {
-    if (!Platform.isAndroid) {
-      return true; // Only Android needs explicit storage permission
-    }
-    
-    // Check Android version
-    int androidVersion = 0;
-    try {
-      final versionString = Platform.operatingSystemVersion.split('.').first;
-      androidVersion = int.tryParse(versionString.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-      logger.i('Android version detected: $androidVersion');
-    } catch (e) {
-      logger.e('Error parsing OS version: $e');
-    }
-    
-    // For Android 11+ (API 30+), we need to handle "All files access" permission
-    if (androidVersion >= 30) {
-      logger.i('Android 11+ detected, checking for All files access permission');
-      
-      // Check if we have the manage external storage permission
-      PermissionStatus allFilesStatus = await Permission.manageExternalStorage.status;
-      
-      if (allFilesStatus.isGranted) {
-        logger.i('All files access permission already granted');
-        return true;
-      }
-      
-      // First try regular storage permission as it's less intrusive
-      PermissionStatus storageStatus = await Permission.storage.status;
-      if (storageStatus.isGranted) {
-        logger.i('Standard storage permission granted, might be sufficient');
-        return true;
-      }
-      
-      // Request standard storage permission first
-      logger.i('Requesting storage permission');
-      storageStatus = await Permission.storage.request();
-      
-      if (storageStatus.isGranted) {
-        logger.i('Storage permission granted');
-        return true;
-      }
-      
-      // If standard storage isn't enough, we need to request All files access
-      logger.i('Standard storage permission denied or insufficient, requesting All files access');
-      
-      // Show an explanation dialog
-      if (context.mounted) {
-        bool shouldProceed = await showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Storage Access Required'),
-            content: const Text(
-              'This app needs permission to access your storage to download and install APKs. '
-              'On Android 11+, this requires "All files access" permission.\n\n'
-              'You will be redirected to a settings page to enable this permission.'
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Continue'),
-              ),
-            ],
-          ),
-        ) ?? false;
-        
-        if (!shouldProceed) {
-          logger.w('User cancelled All files access permission request');
-          return false;
-        }
-        
-        // Request the All files access permission
-        // This redirects to a special settings page
-        allFilesStatus = await Permission.manageExternalStorage.request();
-        
-        // Check the result after returning from settings
-        if (allFilesStatus.isGranted) {
-          logger.i('All files access permission granted');
-          return true;
-        } else {
-          logger.w('All files access permission not granted: $allFilesStatus');
-          
-          // Show additional guidance if permission is still not granted
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                  'Storage permission is required to download APKs. Please enable "All files access".'
-                ),
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(
-                  label: 'Settings',
-                  onPressed: () => openAppSettings(),
-                ),
-              ),
-            );
-          }
-          return false;
-        }
-      }
-      return false;
-    }
-    
-    // For Android 10 and below, use the regular storage permission
-    // Check if already granted
-    PermissionStatus status = await Permission.storage.status;
-    
-    // If already granted, return true
-    if (status.isGranted) {
-      logger.i('Standard storage permission already granted');
-      return true;
-    }
-    
-    // Request standard storage permission
-    logger.i('Requesting storage permission');
-    status = await Permission.storage.request();
-    
-    if (status.isGranted) {
-      logger.i('Storage permission granted');
-      return true;
-    }
-    
-    // If we reach here, permission wasn't granted
-    logger.w('Storage permission not granted, status: $status');
-    
-    // Check if we should show a dialog
-    if (status.isPermanentlyDenied) {
-      // Show dialog to open settings
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Storage Permission Required'),
-            content: const Text(
-              'Storage permission is required to download APKs. Please enable it in app settings.'
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  openAppSettings();
-                },
-                child: const Text('Open Settings'),
-              ),
-            ],
-          ),
-        );
-      }
-    } else {
-      // Show a prompt to try again
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Storage permission is required to download APKs'),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'Try Again',
-              onPressed: () async {
-                if (!context.mounted) return; // Check context before async gap
-                // Try again
-                final retryStatus = await Permission.storage.request();
-                if (!context.mounted) return; // Check context after async gap
-
-                if (!retryStatus.isGranted) {
-                  // If still denied after trying again, offer to open settings
-                  showDialog(
-                    context: context, // Use the original context
-                    builder: (dialogContext) => AlertDialog(
-                      title: const Text('Permission Still Denied'),
-                      content: const Text(
-                        'Storage permission is crucial for downloading APKs. Please enable it in app settings to continue.'
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(dialogContext).pop();
-                            openAppSettings(); // Function to open app settings
-                          },
-                          child: const Text('Open Settings'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
-                  // Optional: show a success message or let the original flow continue
-                  // This might be useful for immediate feedback if the user is waiting.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Storage permission granted! You can now try the action again.'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-        );
-      }
-    }
-    
-    return false;
+    // Delegate to the dedicated handler class
+    return StoragePermissionHandler.requestStoragePermission(context);
   }
 
   /// Get the app version

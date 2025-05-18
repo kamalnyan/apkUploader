@@ -143,6 +143,13 @@ class _APKUploadScreenState extends State<APKUploadScreen> {
         apkFile: _apkFile!,
         iconFile: _imageFile,
         sizeBytes: await _apkFile!.length(),
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _uploadProgress = progress;
+            });
+          }
+        },
       );
 
       if (!mounted) return;
@@ -433,7 +440,7 @@ class _APKUploadScreenState extends State<APKUploadScreen> {
                           children: [
                             const Icon(Icons.cloud_upload),
                             const SizedBox(width: AppTheme.spacingSmall),
-                            const Text('Upload APK'),
+                            const Text('Upload '),
                           ],
                         ),
                       ),

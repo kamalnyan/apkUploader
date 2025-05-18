@@ -416,6 +416,96 @@ class _APKDetailsScreenState extends State<APKDetailsScreen> {
                     const SizedBox(height: AppTheme.spacingLarge),
                   ],
                   
+                  // Additional Details section
+                  if (_hasAdditionalDetails()) ...[
+                    const Divider(),
+                    
+                    const SizedBox(height: AppTheme.spacingMedium),
+                    
+                    // Section title
+                    Text(
+                      'Additional Details',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: AppTheme.spacingMedium),
+                    
+                    // Category
+                    if (apk.category != null && apk.category!.isNotEmpty) ...[
+                      _buildInfoRow(Icons.category, 'Category', apk.category!),
+                      const SizedBox(height: AppTheme.spacingSmall),
+                    ],
+                    
+                    // Release Date
+                    if (apk.releaseDate != null && apk.releaseDate!.isNotEmpty) ...[
+                      _buildInfoRow(Icons.calendar_today, 'Release Date', apk.releaseDate!),
+                      const SizedBox(height: AppTheme.spacingSmall),
+                    ],
+                    
+                    // Languages
+                    if (apk.languages != null && apk.languages!.isNotEmpty) ...[
+                      _buildInfoRow(Icons.language, 'Languages', apk.languages!),
+                      const SizedBox(height: AppTheme.spacingSmall),
+                    ],
+                    
+                    // Installation Instructions
+                    if (apk.installInstructions != null && apk.installInstructions!.isNotEmpty) ...[
+                      _buildInfoRow(Icons.install_mobile, 'Installation', apk.installInstructions!),
+                      const SizedBox(height: AppTheme.spacingSmall),
+                    ],
+                    
+                    // Support Email
+                    if (apk.supportEmail != null && apk.supportEmail!.isNotEmpty) ...[
+                      _buildInfoRow(Icons.email, 'Support', apk.supportEmail!),
+                      const SizedBox(height: AppTheme.spacingSmall),
+                    ],
+                    
+                    // Privacy Policy
+                    if (apk.privacyPolicyUrl != null && apk.privacyPolicyUrl!.isNotEmpty) ...[
+                      _buildInfoRow(Icons.policy, 'Privacy Policy', apk.privacyPolicyUrl!),
+                      const SizedBox(height: AppTheme.spacingSmall),
+                    ],
+                    
+                    const SizedBox(height: AppTheme.spacingMedium),
+                  ],
+                  
+                  // Technical Details section
+                  const Divider(),
+                  
+                  const SizedBox(height: AppTheme.spacingMedium),
+                  
+                  // Section title
+                  Text(
+                    'Technical Details',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: AppTheme.spacingMedium),
+                  
+                  // Package name
+                  _buildInfoRow(Icons.android, 'Package Name', apk.packageName),
+                  const SizedBox(height: AppTheme.spacingSmall),
+                  
+                  // Version code
+                  _buildInfoRow(Icons.tag, 'Version Code', apk.versionCode.toString()),
+                  const SizedBox(height: AppTheme.spacingSmall),
+                  
+                  // Min SDK
+                  _buildInfoRow(Icons.settings_suggest, 'Min SDK', 'Android ${apk.minSdk}+'),
+                  const SizedBox(height: AppTheme.spacingSmall),
+                  
+                  // Target SDK
+                  _buildInfoRow(Icons.settings_applications, 'Target SDK', 'Android ${apk.targetSdk}'),
+                  const SizedBox(height: AppTheme.spacingSmall),
+                  
+                  // Size
+                  _buildInfoRow(Icons.data_usage, 'Size', _formatFileSize(apk.sizeBytes)),
+                  const SizedBox(height: AppTheme.spacingMedium),
+                  
                   // Download section at the bottom
                   const Divider(),
                   
@@ -467,5 +557,62 @@ class _APKDetailsScreenState extends State<APKDetailsScreen> {
               ),
             ),
     );
+  }
+
+  bool _hasAdditionalDetails() {
+    final apk = widget.apk;
+    // Check if there are any additional details to display
+    return (apk.category != null && apk.category!.isNotEmpty) ||
+           (apk.releaseDate != null && apk.releaseDate!.isNotEmpty) ||
+           (apk.languages != null && apk.languages!.isNotEmpty) ||
+           (apk.installInstructions != null && apk.installInstructions!.isNotEmpty) ||
+           (apk.supportEmail != null && apk.supportEmail!.isNotEmpty) ||
+           (apk.privacyPolicyUrl != null && apk.privacyPolicyUrl!.isNotEmpty);
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Colors.grey,
+        ),
+        const SizedBox(width: AppTheme.spacingXs),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    } else if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
   }
 }

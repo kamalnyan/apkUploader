@@ -9,18 +9,13 @@ import 'package:flutter/services.dart';
 /// Dedicated class for handling storage permissions across Android versions
 class StoragePermissionHandler {
   // Check if the device is running Android 11 (API 30) or higher
-  static bool get _isAndroid11OrHigher {
+  static Future<bool> _isAndroid11OrHigher() async {
     if (!Platform.isAndroid) return false;
     
     try {
-      final versionString = Platform.operatingSystemVersion;
-      // Try to extract Android version, handling edge cases like "BP22"
-      final versionMatch = RegExp(r'(\d+)').firstMatch(versionString);
-      if (versionMatch != null) {
-        final version = int.tryParse(versionMatch.group(1) ?? "0") ?? 0;
-        return version >= 11;
-      }
-      return false;
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      final androidInfo = await deviceInfoPlugin.androidInfo;
+      return androidInfo.version.sdkInt >= 30;
     } catch (e) {
       logger.e('Error determining Android version: $e');
       return false;
@@ -66,9 +61,8 @@ class StoragePermissionHandler {
   }
   
   /// Alias method for checkStoragePermission for backward compatibility
-  static Future<bool> hasStoragePermission() async {
-    return await checkStoragePermission();
-  }
+  @deprecated
+  static Future<bool> hasStoragePermission() => checkStoragePermission();
   
   /// Request appropriate storage permissions based on Android version
   static Future<bool> requestStoragePermission(BuildContext context) async {

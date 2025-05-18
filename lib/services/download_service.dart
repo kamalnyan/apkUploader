@@ -14,6 +14,7 @@ import '../core/constants.dart';
 import '../utils/helpers.dart';
 import '../utils/storage_permission_handler.dart';
 import '../utils/notification_helper.dart';
+import '../components/installation_progress.dart';
 
 /// Result class for download operations
 class DownloadResult {
@@ -551,9 +552,38 @@ class DownloadService {
     Function(double)? onProgress,
     bool useSession = true,
     bool showNotifications = true,
+    bool showModernUI = true,
   }) async {
-    try {
-      // Show downloading message
+    // Cancellation token
+    final cancelToken = CancellationToken();
+    double downloadProgress = 0;
+    
+    // Show modern installation UI if requested
+    if (showModernUI) {
+      // Show dialog with progress
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setState) {
+            return InstallationProgressDialog(
+              progress: downloadProgress,
+              status: downloadProgress == 0 
+                ? 'Preparing to download...'
+                : (downloadProgress < 100 
+                    ? 'Downloading $fileName...' 
+                    : 'Preparing to install...'),
+              onCancel: cancelToken.isCancelled ? null : () {
+                cancelToken.cancel();
+                Navigator.of(dialogContext).pop();
+              },
+              isComplete: false,
+            );
+          }
+        ),
+      );
+    } else {
+      // Show downloading message with classic UI
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -562,22 +592,53 @@ class DownloadService {
           ),
         );
       }
-      
+    }
+    
+    try {
       // Download the APK
       final filePath = await downloadAPK(
         url, 
         fileName, 
-        onProgress: onProgress,
+        onProgress: (progress) {
+          downloadProgress = progress;
+          onProgress?.call(progress);
+          
+          // Update UI if showing modern dialog
+          if (showModernUI && context.mounted) {
+            // Trigger rebuild of the dialog
+            (context as Element).markNeedsBuild();
+          }
+        },
         showNotification: showNotifications,
       );
       
+      // Close download dialog if shown
+      if (showModernUI && context.mounted) {
+        Navigator.of(context).pop();
+      }
+      
       if (filePath == null) {
         if (context.mounted) {
-          AppHelpers.showSnackBar(
-            context, 
-            'Failed to download APK. Please check permissions and try again.', 
-            isError: true,
-          );
+          if (showModernUI) {
+            // Show error dialog
+            showDialog(
+              context: context,
+              builder: (context) => InstallationProgressDialog(
+                progress: 0,
+                status: 'Failed to download APK. Please check permissions and try again.',
+                isComplete: true,
+                isError: true,
+                onDone: () => Navigator.of(context).pop(),
+              ),
+            );
+          } else {
+            // Show classic error
+            AppHelpers.showSnackBar(
+              context, 
+              'Failed to download APK. Please check permissions and try again.', 
+              isError: true,
+            );
+          }
         }
         return DownloadResult(
           success: false,
@@ -588,8 +649,19 @@ class DownloadService {
         );
       }
       
-      // Show installation message
-      if (context.mounted) {
+      // Show installation progress
+      if (showModernUI && context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => InstallationProgressDialog(
+            progress: 100,
+            status: 'Installing $fileName...',
+            isComplete: false,
+          ),
+        );
+      } else if (context.mounted) {
+        // Show classic installation message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Installing APK...'),
@@ -614,11 +686,45 @@ class DownloadService {
         );
       }
       
-      if (!installed && context.mounted) {
-        AppHelpers.showSnackBar(
-          context, 
-          'Please grant installation permission and try again.', 
-          isError: true,
+      // Close installation dialog if shown
+      if (showModernUI && context.mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      if (!installed) {
+        if (context.mounted) {
+          if (showModernUI) {
+            // Show permission required dialog
+            showDialog(
+              context: context,
+              builder: (context) => InstallationProgressDialog(
+                progress: 0,
+                status: 'Please grant permission to install applications.',
+                isComplete: true,
+                isError: true,
+                onDone: () => Navigator.of(context).pop(),
+              ),
+            );
+          } else {
+            // Show classic error
+            AppHelpers.showSnackBar(
+              context, 
+              'Please grant installation permission and try again.', 
+              isError: true,
+            );
+          }
+        }
+      } else if (showModernUI && context.mounted) {
+        // Show success dialog
+        showDialog(
+          context: context,
+          builder: (context) => InstallationProgressDialog(
+            progress: 100,
+            status: 'Installation has started. Please follow the on-screen instructions to complete installation.',
+            isComplete: true,
+            isError: false,
+            onDone: () => Navigator.of(context).pop(),
+          ),
         );
       }
       
@@ -631,13 +737,30 @@ class DownloadService {
       );
     } catch (e) {
       logger.e('Error downloading and installing APK: $e');
-      if (context.mounted) {
+      
+      // Close any open dialogs
+      if (showModernUI && context.mounted) {
+        Navigator.of(context).pop();
+        
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (context) => InstallationProgressDialog(
+            progress: 0,
+            status: 'Error: ${e.toString()}',
+            isComplete: true,
+            isError: true,
+            onDone: () => Navigator.of(context).pop(),
+          ),
+        );
+      } else if (context.mounted) {
         AppHelpers.showSnackBar(
           context, 
           'Failed to install APK: ${e.toString()}', 
           isError: true,
         );
       }
+      
       return DownloadResult(
         success: false,
         installStarted: false,
@@ -687,5 +810,16 @@ class DownloadService {
       needsSettings: false,
       hasAction: false,
     );
+  }
+}
+
+/// Simple cancellation token for download operations
+class CancellationToken {
+  bool _isCancelled = false;
+  
+  bool get isCancelled => _isCancelled;
+  
+  void cancel() {
+    _isCancelled = true;
   }
 } 

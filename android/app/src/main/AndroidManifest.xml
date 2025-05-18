@@ -60,6 +60,15 @@
             </intent-filter>
         </receiver>
         
+        <!-- PackageInstaller session status receiver -->
+        <receiver
+            android:name=".InstallationStatusReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="${packageName}.PACKAGE_INSTALLED" />
+            </intent-filter>
+        </receiver>
+        
         <!-- File provider for APK installation -->
         <provider
             android:name="androidx.core.content.FileProvider"

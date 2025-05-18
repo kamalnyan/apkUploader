@@ -171,7 +171,7 @@ class APKCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+            // Todo
             // Admin actions (for admin)
             if (showActions && isAdmin)
               Container(
@@ -199,7 +199,7 @@ class APKCard extends StatelessWidget {
                       tooltip: 'Edit',
                       color: AppTheme.infoColor,
                     ),
-                    
+
                     // Toggle pin button
                     IconButton(
                       onPressed: onTogglePin,
@@ -210,7 +210,7 @@ class APKCard extends StatelessWidget {
                       tooltip: apk.isPinned ? 'Unpin' : 'Pin',
                       color: apk.isPinned ? AppTheme.warningColor : AppTheme.textLightColor,
                     ),
-                    
+
                     // Delete button
                     IconButton(
                       onPressed: onDelete,

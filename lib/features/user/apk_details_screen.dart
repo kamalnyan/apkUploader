@@ -261,6 +261,7 @@ class _APKDetailsScreenState extends State<APKDetailsScreen> {
               ),
             );
           }
+
         }
       } else if (AppHelpers.isIOS()) {
         // Show iOS message
@@ -275,6 +276,7 @@ class _APKDetailsScreenState extends State<APKDetailsScreen> {
             ),
           );
         }
+
       }
     } catch (e) {
       // If an error occurs and the dialog is still showing, dismiss it
@@ -739,4 +741,4 @@ class _APKDetailsScreenState extends State<APKDetailsScreen> {
       ),
     );
   }
-} 
+}

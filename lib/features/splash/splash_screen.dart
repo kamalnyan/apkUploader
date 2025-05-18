@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/providers/app_provider.dart';
 import '../../core/providers/apk_provider.dart';
-import '../../core/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/helpers.dart';
@@ -26,16 +25,28 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
   bool _isInitialized = false;
   String? _errorMessage;
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _animationController.repeat();
     _initializeApp();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   /// Initialize app data and check auth status
@@ -197,166 +208,183 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App logo/icon
-            Hero(
-              tag: 'app-logo',
-              child: Animate(
-                effects: [
-                  FadeEffect(duration: AppTheme.mediumAnimationDuration),
-                  ScaleEffect(
-                    begin: const Offset(0.8, 0.8),
-                    end: const Offset(1.0, 1.0),
-                    duration: AppTheme.mediumAnimationDuration,
-                  ),
-                ],
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.primaryContainer.withOpacity(0.6),
+              colorScheme.background,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App logo/icon
+                Hero(
+                  tag: 'app-logo',
+                  child: Animate(
+                    effects: [
+                      FadeEffect(duration: const Duration(milliseconds: 800)),
+                      ScaleEffect(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1.0, 1.0),
+                        duration: const Duration(milliseconds: 800),
                       ),
                     ],
-                  ),
-                  child: const Icon(
-                    Icons.android_rounded,
-                    color: Colors.white,
-                    size: 80,
-                  ),
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: AppTheme.spacingLarge),
-            
-            // App name
-            Animate(
-              effects: [
-                FadeEffect(
-                  duration: AppTheme.mediumAnimationDuration,
-                  delay: const Duration(milliseconds: 300),
-                ),
-                SlideEffect(
-                  begin: const Offset(0, 10),
-                  end: const Offset(0, 0),
-                  duration: AppTheme.mediumAnimationDuration,
-                  delay: const Duration(milliseconds: 300),
-                ),
-              ],
-              child: Text(
-                AppConstants.appName,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: AppTheme.spacingMedium),
-            
-            // App description
-            Animate(
-              effects: [
-                FadeEffect(
-                  duration: AppTheme.mediumAnimationDuration,
-                  delay: const Duration(milliseconds: 400),
-                ),
-                SlideEffect(
-                  begin: const Offset(0, 10),
-                  end: const Offset(0, 0),
-                  duration: AppTheme.mediumAnimationDuration,
-                  delay: const Duration(milliseconds: 400),
-                ),
-              ],
-              child: Text(
-                'APK Management Platform',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: AppTheme.spacingXl),
-            
-            // Loading animation or error message
-            if (_errorMessage != null)
-              Animate(
-                effects: [
-                  FadeEffect(
-                    duration: AppTheme.mediumAnimationDuration,
-                    delay: const Duration(milliseconds: 500),
-                  ),
-                ],
-                child: Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacingLarge,
-                  ),
-                  padding: const EdgeInsets.all(AppTheme.spacingMedium),
-                  decoration: BoxDecoration(
-                    color: AppTheme.errorColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                      AppTheme.borderRadiusMedium,
-                    ),
-                    border: Border.all(
-                      color: AppTheme.errorColor.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppTheme.errorColor,
-                      ),
-                      const SizedBox(width: AppTheme.spacingSmall),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.errorColor,
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
                           ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.android_rounded,
+                        color: colorScheme.onPrimary,
+                        size: 80,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // App name
+                Animate(
+                  effects: [
+                    FadeEffect(
+                      duration: const Duration(milliseconds: 800),
+                      delay: const Duration(milliseconds: 300),
+                    ),
+                    SlideEffect(
+                      begin: const Offset(0, 10),
+                      end: const Offset(0, 0),
+                      duration: const Duration(milliseconds: 800),
+                      delay: const Duration(milliseconds: 300),
+                    ),
+                  ],
+                  child: Text(
+                    AppConstants.appName,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // App description
+                Animate(
+                  effects: [
+                    FadeEffect(
+                      duration: const Duration(milliseconds: 800),
+                      delay: const Duration(milliseconds: 400),
+                    ),
+                    SlideEffect(
+                      begin: const Offset(0, 10),
+                      end: const Offset(0, 0),
+                      duration: const Duration(milliseconds: 800),
+                      delay: const Duration(milliseconds: 400),
+                    ),
+                  ],
+                  child: Text(
+                    'APK Management Platform',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 48),
+                
+                // Loading animation or error message
+                if (_errorMessage != null)
+                  Animate(
+                    effects: [
+                      FadeEffect(
+                        duration: const Duration(milliseconds: 800),
+                        delay: const Duration(milliseconds: 500),
+                      ),
+                    ],
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: colorScheme.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    children: [
+                      // Loading animation
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return CircularProgressIndicator(
+                              value: _animationController.value,
+                              color: colorScheme.primary,
+                              strokeWidth: 3,
+                            );
+                          },
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Loading text
+                      Text(
+                        _isInitialized 
+                            ? 'Checking credentials...' 
+                            : 'Initializing...',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                ),
-              )
-            else
-              Column(
-                children: [
-                  // Loading animation
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryColor,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: AppTheme.spacingMedium),
-                  
-                  // Loading text
-                  Text(
-                    _isInitialized 
-                        ? 'Checking credentials...' 
-                        : 'Initializing...',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

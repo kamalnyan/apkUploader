@@ -22,6 +22,19 @@ class ModelAdapter {
       downloads: firebaseAPK.downloads,
       createdAt: firebaseAPK.createdAt,
       updatedAt: firebaseAPK.updatedAt,
+      developer: firebaseAPK.developer,
+      minRequirements: firebaseAPK.minRequirements,
+      playStoreUrl: firebaseAPK.playStoreUrl,
+      permissions: firebaseAPK.permissions,
+      category: firebaseAPK.category,
+      releaseDate: firebaseAPK.releaseDate,
+      languages: firebaseAPK.languages,
+      installInstructions: firebaseAPK.installInstructions,
+      changelog: firebaseAPK.changelog,
+      supportEmail: firebaseAPK.supportEmail,
+      privacyPolicyUrl: firebaseAPK.privacyPolicyUrl,
+      isRestricted: firebaseAPK.isRestricted,
+      downloadPassword: firebaseAPK.downloadPassword,
     );
   }
 
@@ -46,6 +59,19 @@ class ModelAdapter {
       updatedBy: updatedBy,
       createdAt: apkModel.createdAt,
       updatedAt: apkModel.updatedAt,
+      developer: apkModel.developer,
+      minRequirements: apkModel.minRequirements,
+      playStoreUrl: apkModel.playStoreUrl,
+      permissions: apkModel.permissions,
+      category: apkModel.category,
+      releaseDate: apkModel.releaseDate,
+      languages: apkModel.languages,
+      installInstructions: apkModel.installInstructions,
+      changelog: apkModel.changelog,
+      supportEmail: apkModel.supportEmail,
+      privacyPolicyUrl: apkModel.privacyPolicyUrl,
+      isRestricted: apkModel.isRestricted,
+      downloadPassword: apkModel.downloadPassword,
     );
   }
 

@@ -16,7 +16,7 @@ import '../../widgets/apk_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
 import '../user/user_home_screen.dart';
-import 'apk_upload_screen.dart';
+import '../admin/enhanced_upload_form.dart';
 import 'apk_edit_screen.dart';
 
 /// Editor home screen with APK management (no user management)
@@ -65,7 +65,7 @@ class _EditorHomeScreenState extends State<EditorHomeScreen> with SingleTickerPr
   void _navigateToUpload() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const APKUploadScreen(),
+        builder: (context) => const EnhancedUploadForm(),
       ),
     );
   }

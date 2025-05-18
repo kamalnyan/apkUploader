@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:app_settings/app_settings.dart';
 
 import '../../core/constants.dart';
 import '../../core/models/apk_model.dart';
-import '../../core/models/model_adapter.dart';
+import '../../core/theme.dart';
 import '../../core/providers/apk_provider.dart';
 import '../../core/providers/app_provider.dart';
-import '../../core/theme.dart';
+import '../../core/models/model_adapter.dart';
 import '../../services/auth_service.dart';
 import '../../services/download_service.dart';
 import '../../utils/helpers.dart';
@@ -20,9 +18,10 @@ import '../../widgets/apk_card.dart';
 import '../../widgets/download_progress_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
-import '../auth/login_screen.dart';
+import '../../components/theme_toggle_button.dart';
 import 'apk_details_screen.dart';
 import '../admin/admin_home_screen.dart';
+import '../auth/login_screen.dart';
 
 /// Home screen for regular users
 class UserHomeScreen extends StatefulWidget {
@@ -608,20 +607,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with SingleTickerProvid
               ],
             ),
           // Dark mode toggle
-          AppTheme.drawerListTile(
-            icon: isDark ? Icons.dark_mode : Icons.light_mode,
-            title: 'Dark Mode',
-            onTap: () {
-              context.read<AppProvider>().toggleTheme();
-            },
-            trailing: Switch(
-              value: isDark,
-              onChanged: (_) {
-                context.read<AppProvider>().toggleTheme();
-              },
-              activeColor: AppTheme.primaryColor,
-            ),
-          ),
+          const ThemeToggleButton(asSwitch: true),
         ],
       ),
     );
@@ -644,15 +630,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with SingleTickerProvid
         title: AppConstants.appName,
         actions: [
           // Theme toggle button
-          AppTheme.appBarActionButton(
-            icon: context.watch<AppProvider>().isDarkMode
-                ? Icons.light_mode
-                : Icons.dark_mode,
-            tooltip: 'Toggle Theme',
-            onPressed: () {
-              context.read<AppProvider>().toggleTheme();
-            },
-          ),
+          const ThemeToggleButton(),
         ],
       ),
       body: Column(
@@ -710,6 +688,18 @@ class _UserHomeScreenState extends State<UserHomeScreen> with SingleTickerProvid
             ),
           ),
         ],
+      ),
+      // Add floating action button for theme toggling
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.read<AppProvider>().toggleTheme();
+        },
+        tooltip: 'Toggle Theme',
+        child: Icon(
+          context.watch<AppProvider>().isDarkMode 
+              ? Icons.light_mode 
+              : Icons.dark_mode,
+        ),
       ),
     );
   }

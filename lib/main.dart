@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'core/providers/apk_provider.dart';
 import 'core/providers/app_provider.dart';
-import 'core/theme.dart';
+import 'themes/app_theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'firebase_options.dart';
 import 'utils/helpers.dart';
@@ -21,6 +21,15 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  
+  // Set system UI overlay style for better integration
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
   
   // Initialize Firebase
   try {
@@ -42,7 +51,19 @@ Future<void> main() async {
     logger.e('Notification initialization error: $e');
   }
   
-  runApp(const APKUploaderApp());
+  // Initialize App Provider to load saved preferences
+  final appProvider = AppProvider();
+  await appProvider.init();
+  
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: appProvider),
+        ChangeNotifierProvider(create: (context) => APKProvider()),
+      ],
+      child: const APKUploaderApp(),
+    ),
+  );
 }
 
 /// The main app widget
@@ -99,26 +120,33 @@ class _APKUploaderAppState extends State<APKUploaderApp> with WidgetsBindingObse
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => AppProvider()),
-        ChangeNotifierProvider(create: (context) => APKProvider()),
-      ],
-      child: Consumer<AppProvider>(
-        builder: (context, appProvider, child) {
-          final isDarkMode = appProvider.isDarkMode;
-          
-          return MaterialApp(
-            title: 'APK Uploader',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            debugShowCheckedModeBanner: false, // No debug banner in production
-            navigatorKey: _navigatorKey, // Set navigator key for context access
-            home: const SplashScreen(),
-          );
-        },
-      ),
+    return Consumer<AppProvider>(
+      builder: (context, appProvider, child) {
+        final isDarkMode = appProvider.isDarkMode;
+        
+        // Update UI style based on theme
+        final overlayStyle = isDarkMode
+            ? SystemUiOverlayStyle.light.copyWith(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: const Color(0xFF1A1A1A),
+              )
+            : SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: Colors.white,
+              );
+        
+        SystemChrome.setSystemUIOverlayStyle(overlayStyle);
+        
+        return MaterialApp(
+          title: 'APK Uploader',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          debugShowCheckedModeBanner: false, // No debug banner in production
+          navigatorKey: _navigatorKey, // Set navigator key for context access
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

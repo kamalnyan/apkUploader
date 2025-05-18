@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,6 +14,11 @@ class FirebaseService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
+  // Track active uploads to allow cancellation
+  final Map<String, UploadTask> _activeUploads = {};
+  final Map<String, StreamSubscription> _activeListeners = {};
+  bool _uploadCancelled = false;
+  
   // Storage paths
   static const String _apksPath = 'apks';
   static const String _screenshotsPath = 'screenshots';
@@ -21,6 +27,30 @@ class FirebaseService {
   // Collection names
   static const String _apksCollection = 'apk_uploads';
   static const String _usersCollection = 'users';
+
+  /// Check if there are active uploads
+  bool get hasActiveUploads => _activeUploads.isNotEmpty;
+  
+  /// Cancel all active uploads
+  Future<void> cancelUploads() async {
+    _uploadCancelled = true;
+    
+    // Cancel all listeners first
+    for (final subscription in _activeListeners.values) {
+      await subscription.cancel();
+    }
+    _activeListeners.clear();
+    
+    // Then cancel all tasks
+    for (final task in _activeUploads.values) {
+      try {
+        task.cancel();
+      } catch (e) {
+        logger.e('Error cancelling upload: $e');
+      }
+    }
+    _activeUploads.clear();
+  }
 
   /// Get all APKs from the database
   Future<List<FirebaseAPK>> getApks() async {
@@ -215,14 +245,65 @@ class FirebaseService {
   }
 
   /// Upload an APK file to Firebase storage
-  Future<String> uploadAPK(File file, String fileName) async {
+  Future<String> uploadAPK(File file, String fileName, {Function(int)? onProgress}) async {
     try {
+      _uploadCancelled = false;
+      
       final extension = path.extension(fileName);
       final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
       final storageRef = _storage.ref().child('$_apksPath/$uniqueFileName');
       
       final uploadTask = storageRef.putFile(file);
+      final uploadId = 'apk_$uniqueFileName';
+      _activeUploads[uploadId] = uploadTask;
+      
+      // Track upload progress if callback is provided
+      if (onProgress != null) {
+        int lastProgress = 0;
+        
+        // Use a single listener to avoid multiple progress callbacks
+        final listener = uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          // Calculate progress percentage
+          final progress = (snapshot.bytesTransferred / snapshot.totalBytes * 100).round();
+          
+          // Only notify if the progress has changed and is not decreasing
+          if (progress > lastProgress && !_uploadCancelled) {
+            lastProgress = progress;
+            onProgress(progress);
+          }
+          
+          // Handle upload completion
+          if (snapshot.state == TaskState.success) {
+            _activeUploads.remove(uploadId);
+            if (_activeListeners.containsKey(uploadId)) {
+              _activeListeners[uploadId]?.cancel();
+              _activeListeners.remove(uploadId);
+            }
+          }
+        }, onError: (e) {
+          logger.e('Error during APK upload: $e');
+          _activeUploads.remove(uploadId);
+        }, onDone: () {
+          _activeUploads.remove(uploadId);
+        });
+        
+        _activeListeners[uploadId] = listener;
+      }
+      
+      // Wait for upload to complete
       final snapshot = await uploadTask;
+      
+      // Clean up
+      _activeUploads.remove(uploadId);
+      if (_activeListeners.containsKey(uploadId)) {
+        await _activeListeners[uploadId]?.cancel();
+        _activeListeners.remove(uploadId);
+      }
+      
+      // If upload was cancelled, throw an exception
+      if (_uploadCancelled) {
+        throw Exception('Upload cancelled');
+      }
       
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
@@ -233,14 +314,63 @@ class FirebaseService {
   }
 
   /// Upload an icon file to Firebase storage
-  Future<String> uploadIcon(File file, String fileName) async {
+  Future<String> uploadIcon(File file, String fileName, {Function(int)? onProgress}) async {
     try {
       final extension = path.extension(fileName);
       final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
       final storageRef = _storage.ref().child('$_iconsPath/$uniqueFileName');
       
       final uploadTask = storageRef.putFile(file);
+      final uploadId = 'icon_$uniqueFileName';
+      _activeUploads[uploadId] = uploadTask;
+      
+      // Track upload progress if callback is provided
+      if (onProgress != null) {
+        int lastProgress = 0;
+        
+        // Use a single listener to avoid multiple progress callbacks
+        final listener = uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          // Calculate progress percentage
+          final progress = (snapshot.bytesTransferred / snapshot.totalBytes * 100).round();
+          
+          // Only notify if the progress has changed and is not decreasing
+          if (progress > lastProgress && !_uploadCancelled) {
+            lastProgress = progress;
+            onProgress(progress);
+          }
+          
+          // Handle upload completion
+          if (snapshot.state == TaskState.success) {
+            _activeUploads.remove(uploadId);
+            if (_activeListeners.containsKey(uploadId)) {
+              _activeListeners[uploadId]?.cancel();
+              _activeListeners.remove(uploadId);
+            }
+          }
+        }, onError: (e) {
+          logger.e('Error during icon upload: $e');
+          _activeUploads.remove(uploadId);
+        }, onDone: () {
+          _activeUploads.remove(uploadId);
+        });
+        
+        _activeListeners[uploadId] = listener;
+      }
+      
+      // Wait for upload to complete
       final snapshot = await uploadTask;
+      
+      // Clean up
+      _activeUploads.remove(uploadId);
+      if (_activeListeners.containsKey(uploadId)) {
+        await _activeListeners[uploadId]?.cancel();
+        _activeListeners.remove(uploadId);
+      }
+      
+      // If upload was cancelled, throw an exception
+      if (_uploadCancelled) {
+        throw Exception('Upload cancelled');
+      }
       
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
@@ -251,14 +381,63 @@ class FirebaseService {
   }
 
   /// Upload a screenshot to Firebase storage
-  Future<String> uploadScreenshot(File file, String fileName) async {
+  Future<String> uploadScreenshot(File file, String fileName, {Function(int)? onProgress}) async {
     try {
       final extension = path.extension(fileName);
       final uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
       final storageRef = _storage.ref().child('$_screenshotsPath/$uniqueFileName');
       
       final uploadTask = storageRef.putFile(file);
+      final uploadId = 'screenshot_$uniqueFileName';
+      _activeUploads[uploadId] = uploadTask;
+      
+      // Track upload progress if callback is provided
+      if (onProgress != null) {
+        int lastProgress = 0;
+        
+        // Use a single listener to avoid multiple progress callbacks
+        final listener = uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          // Calculate progress percentage
+          final progress = (snapshot.bytesTransferred / snapshot.totalBytes * 100).round();
+          
+          // Only notify if the progress has changed and is not decreasing
+          if (progress > lastProgress && !_uploadCancelled) {
+            lastProgress = progress;
+            onProgress(progress);
+          }
+          
+          // Handle upload completion
+          if (snapshot.state == TaskState.success) {
+            _activeUploads.remove(uploadId);
+            if (_activeListeners.containsKey(uploadId)) {
+              _activeListeners[uploadId]?.cancel();
+              _activeListeners.remove(uploadId);
+            }
+          }
+        }, onError: (e) {
+          logger.e('Error during screenshot upload: $e');
+          _activeUploads.remove(uploadId);
+        }, onDone: () {
+          _activeUploads.remove(uploadId);
+        });
+        
+        _activeListeners[uploadId] = listener;
+      }
+      
+      // Wait for upload to complete
       final snapshot = await uploadTask;
+      
+      // Clean up
+      _activeUploads.remove(uploadId);
+      if (_activeListeners.containsKey(uploadId)) {
+        await _activeListeners[uploadId]?.cancel();
+        _activeListeners.remove(uploadId);
+      }
+      
+      // If upload was cancelled, throw an exception
+      if (_uploadCancelled) {
+        throw Exception('Upload cancelled');
+      }
       
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
@@ -269,12 +448,35 @@ class FirebaseService {
   }
 
   /// Upload multiple screenshots to Firebase storage
-  Future<List<String>> uploadScreenshots(List<File> files, List<String> fileNames) async {
+  Future<List<String>> uploadScreenshots(List<File> files, List<String> fileNames, {Function(int)? onProgress}) async {
     try {
       final urls = <String>[];
+      final totalFiles = files.length;
+      int overallProgress = 0;
       
       for (int i = 0; i < files.length; i++) {
-        final url = await uploadScreenshot(files[i], fileNames[i]);
+        if (_uploadCancelled) {
+          throw Exception('Upload cancelled');
+        }
+        
+        final url = await uploadScreenshot(
+          files[i], 
+          fileNames[i],
+          onProgress: onProgress != null 
+            ? (progress) {
+                // Calculate overall progress based on current file and its progress
+                // Ensure progress never decreases
+                final fileContribution = (progress / totalFiles).round();
+                final baseProgress = ((i / totalFiles) * 100).round();
+                final newOverallProgress = baseProgress + fileContribution;
+                
+                if (newOverallProgress > overallProgress && !_uploadCancelled) {
+                  overallProgress = newOverallProgress;
+                  onProgress(overallProgress);
+                }
+              }
+            : null
+        );
         urls.add(url);
       }
       

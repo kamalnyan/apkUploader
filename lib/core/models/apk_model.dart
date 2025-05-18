@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Model class for APK information
 class APKModel {
   final String id;
@@ -17,6 +19,19 @@ class APKModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? changelog;
+  final String? developer;
+  final String? minRequirements;
+  final String? playStoreUrl;
+  final List<String> permissions;
+  // Additional fields
+  final String? category;
+  final String? releaseDate;
+  final String? languages;
+  final String? installInstructions;
+  final String? supportEmail;
+  final String? privacyPolicyUrl;
+  final bool isRestricted;
+  final String? downloadPassword;
 
   /// Constructor
   const APKModel({
@@ -37,6 +52,19 @@ class APKModel {
     required this.createdAt,
     required this.updatedAt,
     this.changelog,
+    this.developer,
+    this.minRequirements,
+    this.playStoreUrl,
+    this.permissions = const [],
+    // Additional fields
+    this.category,
+    this.releaseDate,
+    this.languages,
+    this.installInstructions,
+    this.supportEmail,
+    this.privacyPolicyUrl,
+    this.isRestricted = false,
+    this.downloadPassword,
   });
 
   /// For backward compatibility with old code
@@ -73,6 +101,19 @@ class APKModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? changelog,
+    String? developer,
+    String? minRequirements,
+    String? playStoreUrl,
+    List<String>? permissions,
+    // Additional fields
+    String? category,
+    String? releaseDate,
+    String? languages,
+    String? installInstructions,
+    String? supportEmail,
+    String? privacyPolicyUrl,
+    bool? isRestricted,
+    String? downloadPassword,
   }) {
     return APKModel(
       id: id ?? this.id,
@@ -92,6 +133,19 @@ class APKModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       changelog: changelog ?? this.changelog,
+      developer: developer ?? this.developer,
+      minRequirements: minRequirements ?? this.minRequirements,
+      playStoreUrl: playStoreUrl ?? this.playStoreUrl,
+      permissions: permissions ?? this.permissions,
+      // Additional fields
+      category: category ?? this.category,
+      releaseDate: releaseDate ?? this.releaseDate,
+      languages: languages ?? this.languages,
+      installInstructions: installInstructions ?? this.installInstructions,
+      supportEmail: supportEmail ?? this.supportEmail,
+      privacyPolicyUrl: privacyPolicyUrl ?? this.privacyPolicyUrl,
+      isRestricted: isRestricted ?? this.isRestricted,
+      downloadPassword: downloadPassword ?? this.downloadPassword,
     );
   }
 
@@ -119,6 +173,21 @@ class APKModel {
           ? map['updated_at']
           : DateTime.parse(map['updated_at'].toString()),
       changelog: map['changelog'],
+      developer: map['developer'],
+      minRequirements: map['min_requirements'],
+      playStoreUrl: map['play_store_url'],
+      permissions: map['permissions'] != null 
+        ? List<String>.from(map['permissions']) 
+        : [],
+      // Additional fields
+      category: map['category'],
+      releaseDate: map['release_date'],
+      languages: map['languages'],
+      installInstructions: map['install_instructions'],
+      supportEmail: map['support_email'],
+      privacyPolicyUrl: map['privacy_policy_url'],
+      isRestricted: map['is_restricted'] ?? false,
+      downloadPassword: map['download_password'],
     );
   }
 
@@ -141,6 +210,19 @@ class APKModel {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'changelog': changelog,
+      'developer': developer,
+      'min_requirements': minRequirements,
+      'play_store_url': playStoreUrl,
+      'permissions': permissions,
+      // Additional fields
+      'category': category,
+      'release_date': releaseDate,
+      'languages': languages,
+      'install_instructions': installInstructions,
+      'support_email': supportEmail,
+      'privacy_policy_url': privacyPolicyUrl,
+      'is_restricted': isRestricted,
+      'download_password': downloadPassword,
     };
   }
 
@@ -152,7 +234,8 @@ class APKModel {
         'description: $description, apkUrl: $apkUrl, '
         'iconUrl: $iconUrl, screenshots: $screenshots, '
         'sizeBytes: $sizeBytes, isPinned: $isPinned, '
-        'downloads: $downloads, createdAt: $createdAt, updatedAt: $updatedAt)';
+        'downloads: $downloads, createdAt: $createdAt, updatedAt: $updatedAt, '
+        'developer: $developer, minRequirements: $minRequirements)';
   }
 
   @override
@@ -176,7 +259,19 @@ class APKModel {
       other.downloads == downloads &&
       other.createdAt == createdAt &&
       other.updatedAt == updatedAt &&
-      other.changelog == changelog;
+      other.changelog == changelog &&
+      other.developer == developer &&
+      other.minRequirements == minRequirements &&
+      other.playStoreUrl == playStoreUrl &&
+      listEquals(other.permissions, permissions) &&
+      other.category == category &&
+      other.releaseDate == releaseDate &&
+      other.languages == languages &&
+      other.installInstructions == installInstructions &&
+      other.supportEmail == supportEmail &&
+      other.privacyPolicyUrl == privacyPolicyUrl &&
+      other.isRestricted == isRestricted &&
+      other.downloadPassword == downloadPassword;
   }
 
   @override
@@ -197,21 +292,20 @@ class APKModel {
       downloads.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode ^
-      changelog.hashCode;
+      changelog.hashCode ^
+      developer.hashCode ^
+      minRequirements.hashCode ^
+      playStoreUrl.hashCode ^
+      permissions.hashCode ^
+      category.hashCode ^
+      releaseDate.hashCode ^
+      languages.hashCode ^
+      installInstructions.hashCode ^
+      supportEmail.hashCode ^
+      privacyPolicyUrl.hashCode ^
+      isRestricted.hashCode ^
+      downloadPassword.hashCode;
   }
-}
-
-/// Helper function to check if two lists are equal
-bool listEquals<T>(List<T>? a, List<T>? b) {
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-  
-  for (int i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  
-  return true;
 }
 
 /// Helper function to safely parse integer values
